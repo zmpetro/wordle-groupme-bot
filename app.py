@@ -17,9 +17,10 @@ def setup_db(db_name: str) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     c.execute('''
-        CREATE TABLE DAILY_SCORES
+        CREATE TABLE DAILY_STATS
         (PLAYER_ID TEXT PRIMARY KEY NOT NULL,
-        SCORE INT NOT_NULL);
+        SCORE INT NOT_NULL,
+        RANK INT NOT_NULL);
         ''')
 
     c.execute('''
@@ -27,7 +28,8 @@ def setup_db(db_name: str) -> None:
         (PLAYER_ID TEXT PRIMARY KEY NOT NULL,
         GAMES_PLAYED INT NOT_NULL,
         TOTAL_SCORE INT NOT_NULL,
-        AVERAGE_SCORE REAL NOT_NULL);
+        AVERAGE_SCORE REAL NOT_NULL,
+        RANK INT NOT NULL);
         ''')
 
     c.execute('''
@@ -35,7 +37,8 @@ def setup_db(db_name: str) -> None:
         (PLAYER_ID TEXT PRIMARY KEY NOT NULL,
         GAMES_PLAYED INT NOT_NULL,
         TOTAL_SCORE INT NOT_NULL,
-        AVERAGE_SCORE REAL NOT_NULL);
+        AVERAGE_SCORE REAL NOT_NULL,
+        RANK INT NOT NULL);
         ''')
 
     c.execute('''
@@ -62,18 +65,29 @@ if not (os.path.exists(db_name)):
     setup_db(db_name)
 
 def send_message(text: str) -> None:
-    message = {
+    msg = {
         "text": text,
         "bot_id": BOT_ID
     }
-    message = json.dumps(message)
+    msg = json.dumps(msg)
     print("Sending message:", text)
-    resp = requests.post('https://api.groupme.com/v3/bots/post', data=message)
+    resp = requests.post('https://api.groupme.com/v3/bots/post', data=msg)
     resp.raise_for_status()
 
 def is_wordle_message(message: str) -> bool:
     found = re.search("^Wordle\s\d+\s[1-5X]\/\d", message)
     if (found):
+        return True
+    else:
+        return False
+
+def is_new_player_daily(player_id: str) -> bool:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT EXISTS(SELECT 1 FROM DAILY_STATS WHERE PLAYER_ID = ?);", (player_id,))
+    rows = c.fetchall()
+    conn.close()
+    if (rows[0][0] == 0):
         return True
     else:
         return False
@@ -92,7 +106,7 @@ def is_new_player_all_time(player_id: str) -> bool:
 def add_new_player_all_time(player_id: str) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.execute("INSERT INTO ALL_TIME_STATS VALUES (?, 0, 0, 0.0);", (player_id,))
+    c.execute("INSERT INTO ALL_TIME_STATS VALUES (?, 0, 0, 0.0, 0);", (player_id,))
     conn.commit()
     conn.close()
 
@@ -115,7 +129,9 @@ def get_name(player_id: str) -> str:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     c.execute("SELECT NAME FROM NAMES WHERE PLAYER_ID = ?;", (player_id,))
+    rows = c.fetchall()
     conn.close()
+    return rows[0][0]
 
 def is_new_player_weekly(player_id: str) -> bool:
     conn = sqlite3.connect(db_name)
@@ -131,7 +147,7 @@ def is_new_player_weekly(player_id: str) -> bool:
 def add_new_player_weekly(player_id: str) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.execute("INSERT INTO WEEKLY_STATS VALUES (?, 0, 0, 0.0);", (player_id,))
+    c.execute("INSERT INTO WEEKLY_STATS VALUES (?, 0, 0, 0.0, 0);", (player_id,))
     conn.commit()
     conn.close()
 
@@ -152,10 +168,17 @@ def update_game_number(game_number: int) -> None:
     rows = c.fetchall()
     cur_game = rows[0][0]
     if (cur_game != game_number):
-        message = "Welcome to Wordle " + str(game_number) + "!"
-        send_message(message)
+        msg = "Welcome to Wordle " + str(game_number) + "!"
+        send_message(msg)
         c.execute("UPDATE GAME_NUMBER SET GAME = ?;", (game_number,))
         conn.commit()
+    conn.close()
+
+def update_standings_daily(player_id: str, score: int) -> None:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("INSERT INTO DAILY_STATS VALUES (?, ?, 0);", (player_id,score,))
+    conn.commit()
     conn.close()
 
 def update_standings_all_time(player_id: str, score: int) -> None:
@@ -211,6 +234,17 @@ def process_message(message: str) -> None:
     # 5. Update the Wordle game #
     print("Updating the game number to", game_number)
     update_game_number(game_number)
+    # 6. Update the daily scores table
+    print("Updating daily score for player_id:", message['sender_id'], "score:", score)
+    if (is_new_player_daily(message['sender_id']) == True):
+        msg = get_name(message['sender_id'])
+        msg = msg + " has submitted his score for today. Beautiful."
+        send_message(msg)
+        update_standings_daily(message['sender_id'], score)
+    else:
+        msg = get_name(message['sender_id'])
+        msg = msg + " has already submitted a score for today. Not submitting score."
+        send_message(msg)
     # 6. Update the all time standings
     print("Updating all time standings for player_id:", message['sender_id'], "score:", score)
     update_standings_all_time(message['sender_id'], score)
