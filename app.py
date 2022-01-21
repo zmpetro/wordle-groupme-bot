@@ -8,11 +8,11 @@ from urllib.request import Request, urlopen
 
 from flask import Flask, request
 
-def setup_db():
+def setup_db(db_name):
     # If DB exists, connect to it
     # Else, set up new DB
-    if not (os.path.exists("wordle.db")):
-        db = sqlite3.connect('wordle.db')
+    if not (os.path.exists(db_name)):
+        db = sqlite3.connect(db_name)
         db.execute('''
             CREATE TABLE ALL_TIME_STATS
             (PLAYER_ID INT PRIMARY KEY NOT NULL,
@@ -30,10 +30,10 @@ def setup_db():
             ''')
         return db
     else:
-        db = sqlite3.connect('wordle.db')
+        db = sqlite3.connect(db_name)
         return db
 
-db = setup_db()
+db = setup_db("wordle.db")
 
 def is_wordle_message(message: str) -> bool:
     found = re.search("^Wordle\s\d+\s[1-5X]\/\d", message)
