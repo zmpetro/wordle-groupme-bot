@@ -45,21 +45,33 @@ def is_wordle_message(message: str) -> bool:
 def is_new_player_all_time(sender_id: str) -> bool:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.execute("SELECT EXISTS(SELECT 1 FROM ALL_TIME_STATS WHERE PLAYER_ID=\"?\");", (sender_id,))
+    c.execute("SELECT EXISTS(SELECT 1 FROM ALL_TIME_STATS WHERE PLAYER_ID = ?);", (sender_id,))
     rows = c.fetchall()
-    print(rows)
+    conn.close()
+    if (rows[0][0] == 0):
+        return True
+    else:
+        return False
+
+def add_new_player_all_time(sender_id: str) -> None:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("INSERT INTO ALL_TIME_STATS VALUES (?, 0, 0, 0.0);", (sender_id,))
+    conn.commit()
     conn.close()
 
 def process_message(message: str) -> None:
     # 1. Check to see if player is new all time
-    is_new_player_all_time(message['sender_id'])
+    if (is_new_player_all_time(message['sender_id']) == True):
+        print("New player all time. Adding player to database.")
+        add_new_player_all_time(message['sender_id'])
 
 app = Flask(__name__)
 
 @app.route('/', methods=['POST'])
 def webhook():
     message = request.get_json()
-    if(is_wordle_message(message['text']) == False):
+    if (is_wordle_message(message['text']) == False):
         return "ok", 200
     # Message is a Wordle message
     process_message(message)
