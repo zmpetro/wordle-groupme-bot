@@ -276,6 +276,7 @@ def print_help():
         daily - print daily stats
         weekly - print weekly stats
         all - print all time stats
+
         '''
     send_message(msg)
 
