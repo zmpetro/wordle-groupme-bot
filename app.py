@@ -12,8 +12,10 @@ def setup_db(db_name):
     # If DB exists, connect to it
     # Else, set up new DB
     if not (os.path.exists(db_name)):
-        db = sqlite3.connect(db_name)
-        db.execute('''
+        print("Database does not exist. Creating new database.")
+        conn = sqlite3.connect(db_name)
+        c = conn.cursor()
+        c.execute('''
             CREATE TABLE ALL_TIME_STATS
             (PLAYER_ID INT PRIMARY KEY NOT NULL,
             GAMES_PLAYED INT NOT_NULL,
@@ -21,19 +23,25 @@ def setup_db(db_name):
             AVERAGE_SCORE REAL NOT_NULL);
             ''')
 
-        db.execute('''
+        c.execute('''
             CREATE TABLE WEEKLY_STATS
             (PLAYER_ID INT PRIMARY KEY NOT NULL,
             GAMES_PLAYED INT NOT_NULL,
             TOTAL_SCORE INT NOT_NULL,
             AVERAGE_SCORE REAL NOT_NULL);
             ''')
-        return db
+        conn.commit()
+        print("Database and schema created.")
+        return conn 
     else:
-        db = sqlite3.connect(db_name)
-        return db
+        print("Existing database found. Connecting to database.")
+        conn = sqlite3.connect(db_name)
+        print("Database connection successful.")
+        return conn
 
-db = setup_db("wordle.db")
+db_name = "wordle.db"
+print("Connecting to database:", db_name)
+conn = setup_db(db_name)
 
 def is_wordle_message(message: str) -> bool:
     found = re.search("^Wordle\s\d+\s[1-5X]\/\d", message)
