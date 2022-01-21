@@ -60,11 +60,33 @@ def add_new_player_all_time(sender_id: str) -> None:
     conn.commit()
     conn.close()
 
+def is_new_player_weekly(sender_id: str) -> bool:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT EXISTS(SELECT 1 FROM WEEKLY_STATS WHERE PLAYER_ID = ?);", (sender_id,))
+    rows = c.fetchall()
+    conn.close()
+    if (rows[0][0] == 0):
+        return True
+    else:
+        return False
+
+def add_new_player_weekly(sender_id: str) -> None:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("INSERT INTO WEEKLY_STATS VALUES (?, 0, 0, 0.0);", (sender_id,))
+    conn.commit()
+    conn.close()
+
 def process_message(message: str) -> None:
     # 1. Check to see if player is new all time
     if (is_new_player_all_time(message['sender_id']) == True):
         print("New player all time. Adding player to database.")
         add_new_player_all_time(message['sender_id'])
+    # 2. Check to see if player is new weekly
+    if (is_new_player_weekly(message['sender_id']) == True):
+        print("New player weekly. Adding player to table.")
+        add_new_player_weekly(message['sender_id'])
 
 app = Flask(__name__)
 
