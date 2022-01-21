@@ -137,13 +137,19 @@ def get_game_number_and_score(text: str) -> Tuple[int, int]:
     score = found.group(0)[0]
     if (score == 'X'):
         score = 6
-    return game_number, score
+    return int(game_number), int(score)
 
 def update_game_number(game_number: int) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.execute("UPDATE GAME_NUMBER SET GAME = ?;", (game_number,))
-    conn.commit()
+    c.execute("SELECT GAME FROM GAME_NUMBER;")
+    rows = c.fetchall()
+    cur_game = rows[0][0]
+    if (cur_game != game_number):
+        message = "Welcome to Wordle " + str(game_number) + "!"
+        send_message(message)
+        c.execute("UPDATE GAME_NUMBER SET GAME = ?;", (game_number,))
+        conn.commit()
     conn.close()
 
 def update_standings_all_time(player_id: str, score: int) -> None:
