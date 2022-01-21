@@ -2,6 +2,7 @@ import os
 import json
 import re
 import sqlite3
+import requests
 
 from typing import Tuple
 
@@ -9,6 +10,8 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from flask import Flask, request
+
+BOT_ID = os.environ['BOT_ID']
 
 def setup_db(db_name: str) -> None:
     conn = sqlite3.connect(db_name)
@@ -34,6 +37,15 @@ def setup_db(db_name: str) -> None:
         (PLAYER_ID TEXT PRIMARY KEY NOT NULL,
         NAME TEXT NOT NULL);
         ''')
+
+    c.execute('''
+        CREATE TABLE GAME_NUMBER
+        (GAME INT PRIMARY KEY NOT NULL);
+        ''')
+
+    c.execute('''
+        INSERT INTO GAME_NUMBER VALUES (0);
+    ''')
     conn.commit()
     conn.close()
 
@@ -42,6 +54,16 @@ db_name = "wordle.db"
 if not (os.path.exists(db_name)):
     print("Database does not exist. Creating new database.")
     setup_db(db_name)
+
+def send_message(text: str) -> None:
+    message = {
+        "text": text,
+        "bot_id": BOT_ID
+    }
+    message = json.dumps(message)
+    print("Sending message:", text)
+    resp = requests.post('https://api.groupme.com/v3/bots/post', data=message)
+    resp.raise_for_status()
 
 def is_wordle_message(message: str) -> bool:
     found = re.search("^Wordle\s\d+\s[1-5X]\/\d", message)
@@ -117,6 +139,13 @@ def get_game_number_and_score(text: str) -> Tuple[int, int]:
         score = 6
     return game_number, score
 
+def update_game_number(game_number: int) -> None:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("UPDATE GAME_NUMBER SET GAME = ?;", (game_number,))
+    conn.commit()
+    conn.close()
+
 def update_standings_all_time(player_id: str, score: int) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
@@ -156,17 +185,20 @@ def process_message(message: str) -> None:
     if (is_new_player_all_time(message['sender_id']) == True):
         print("New player all time. Adding player to database.")
         add_new_player_all_time(message['sender_id'])
+        # Add a new name for the player as well
         add_new_name(message['sender_id'], message['name'])
     # 2. Check to see if player is new weekly
     if (is_new_player_weekly(message['sender_id']) == True):
         print("New player weekly. Adding player to table.")
         add_new_player_weekly(message['sender_id'])
-    # 4. Update player name in case it has changed
+    # 3. Update player name in case it has changed
     update_name(message['sender_id'], message['name'])
-    # 5. Get the Wordle game # and the score
-    # Game number is not being used for anything yet
+    # 4. Get the Wordle game # and the score
     game_number, score = get_game_number_and_score(message['text'])
     print("Game number:", game_number, "Score:", score)
+    # 5. Update the Wordle game #
+    print("Updating the game number to", game_number)
+    update_game_number(game_number)
     # 6. Update the all time standings
     print("Updating all time standings for player_id:", message['sender_id'], "score:", score)
     update_standings_all_time(message['sender_id'], score)
