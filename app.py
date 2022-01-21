@@ -74,8 +74,15 @@ def send_message(text: str) -> None:
     resp = requests.post('https://api.groupme.com/v3/bots/post', data=msg)
     resp.raise_for_status()
 
-def is_wordle_message(message: str) -> bool:
+def is_wordle_score(message: str) -> bool:
     found = re.search("^Wordle\s\d+\s[1-5X]\/\d", message)
+    if (found):
+        return True
+    else:
+        return False
+
+def is_wordle_command(message: str) -> bool:
+    found = re.search("^\/wordle", message)
     if (found):
         return True
     else:
@@ -215,7 +222,7 @@ def get_player_stats_weekly(player_id: str) -> Tuple[str, int, int, float]:
     conn.close()
     return rows[0]
 
-def process_message(message: str) -> None:
+def process_score(message: str) -> None:
     # 1. Check to see if player is new all time
     if (is_new_player_all_time(message['sender_id']) == True):
         print("New player all time. Adding player to database.")
@@ -237,10 +244,10 @@ def process_message(message: str) -> None:
     # 6. Update the daily scores table
     print("Updating daily score for player_id:", message['sender_id'], "score:", score)
     if (is_new_player_daily(message['sender_id']) == True):
+        update_standings_daily(message['sender_id'], score)
         msg = get_name(message['sender_id'])
         msg = msg + " has submitted his score for today. Beautiful."
         send_message(msg)
-        update_standings_daily(message['sender_id'], score)
     else:
         msg = get_name(message['sender_id'])
         msg = msg + " has already submitted a score for today. Not submitting score."
@@ -252,13 +259,48 @@ def process_message(message: str) -> None:
     print("Updating weekly standings for player_id:", message['sender_id'], "score:", score)
     update_standings_weekly(message['sender_id'], score)
 
+def print_daily_stats():
+    send_message("Placeholder")
+
+def print_weekly_stats():
+    send_message("Placeholder")
+
+def print_all_time_stats():
+    send_message("Placeholder")
+
+def print_help():
+    msg = '''
+        Available commands:
+
+        help - print help menu
+        daily - print daily stats
+        weekly - print weekly stats
+        all - print all time stats
+        '''
+    send_message(msg)
+
+def process_command(message: str) -> None:
+    found = re.search("\s.*$", message['text'])
+    if not found:
+        print_help()
+        return
+    command = found.group(0).strip()
+    if (command == "daily"):
+        print_daily_stats()
+    elif (command == "weekly"):
+        print_weekly_stats()
+    elif (command == "all"):
+        print_all_time_stats()
+    else:
+        print_help()
+
 app = Flask(__name__)
 
 @app.route('/', methods=['POST'])
 def webhook():
     message = request.get_json()
-    if (is_wordle_message(message['text']) == False):
-        return "ok", 200
-    # Message is a Wordle message
-    process_message(message)
+    if (is_wordle_score(message['text']) == True):
+        process_score(message)
+    elif (is_wordle_command(message['text']) == True):
+        process_command(message)
     return "ok", 200
