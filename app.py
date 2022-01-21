@@ -31,17 +31,16 @@ def setup_db(db_name):
             AVERAGE_SCORE REAL NOT_NULL);
             ''')
         conn.commit()
-        print("Database and schema created.")
         return conn 
     else:
         print("Existing database found. Connecting to database.")
         conn = sqlite3.connect(db_name)
-        print("Database connection successful.")
         return conn
 
 db_name = "wordle.db"
 print("Connecting to database:", db_name)
 conn = setup_db(db_name)
+print("Database connection successful.")
 
 def is_wordle_message(message: str) -> bool:
     found = re.search("^Wordle\s\d+\s[1-5X]\/\d", message)
