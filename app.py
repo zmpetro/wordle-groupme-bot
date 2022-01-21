@@ -44,10 +44,10 @@ def is_wordle_message(message: str) -> bool:
     else:
         return False
 
-def is_new_player_all_time(sender_id: str) -> bool:
+def is_new_player_all_time(player_id: str) -> bool:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.execute("SELECT EXISTS(SELECT 1 FROM ALL_TIME_STATS WHERE PLAYER_ID = ?);", (sender_id,))
+    c.execute("SELECT EXISTS(SELECT 1 FROM ALL_TIME_STATS WHERE PLAYER_ID = ?);", (player_id,))
     rows = c.fetchall()
     conn.close()
     if (rows[0][0] == 0):
@@ -55,17 +55,17 @@ def is_new_player_all_time(sender_id: str) -> bool:
     else:
         return False
 
-def add_new_player_all_time(sender_id: str) -> None:
+def add_new_player_all_time(player_id: str) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.execute("INSERT INTO ALL_TIME_STATS VALUES (?, 0, 0, 0.0);", (sender_id,))
+    c.execute("INSERT INTO ALL_TIME_STATS VALUES (?, 0, 0, 0.0);", (player_id,))
     conn.commit()
     conn.close()
 
-def is_new_player_weekly(sender_id: str) -> bool:
+def is_new_player_weekly(player_id: str) -> bool:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.execute("SELECT EXISTS(SELECT 1 FROM WEEKLY_STATS WHERE PLAYER_ID = ?);", (sender_id,))
+    c.execute("SELECT EXISTS(SELECT 1 FROM WEEKLY_STATS WHERE PLAYER_ID = ?);", (player_id,))
     rows = c.fetchall()
     conn.close()
     if (rows[0][0] == 0):
@@ -73,10 +73,10 @@ def is_new_player_weekly(sender_id: str) -> bool:
     else:
         return False
 
-def add_new_player_weekly(sender_id: str) -> None:
+def add_new_player_weekly(player_id: str) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.execute("INSERT INTO WEEKLY_STATS VALUES (?, 0, 0, 0.0);", (sender_id,))
+    c.execute("INSERT INTO WEEKLY_STATS VALUES (?, 0, 0, 0.0);", (player_id,))
     conn.commit()
     conn.close()
 
@@ -90,6 +90,8 @@ def get_game_number_and_score(text: str) -> Tuple[int, int]:
         score = 6
     return game_number, score
 
+def update_standings_all_time()
+
 def process_message(message: str) -> None:
     # 1. Check to see if player is new all time
     if (is_new_player_all_time(message['sender_id']) == True):
@@ -102,6 +104,8 @@ def process_message(message: str) -> None:
     # 3. Get the Wordle game # and the score
     game_number, score = get_game_number_and_score(message['text'])
     print("Game number:", game_number, "Score:", score)
+    # 4. Update the all time standings
+
 
 app = Flask(__name__)
 
