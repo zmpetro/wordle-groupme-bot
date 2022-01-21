@@ -9,6 +9,8 @@ from typing import Tuple
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from trueskill import Rating, rate
+
 from flask import Flask, request
 
 BOT_ID = os.environ['BOT_ID']
@@ -50,6 +52,13 @@ def setup_db(db_name: str) -> None:
     c.execute('''
         CREATE TABLE GAME_NUMBER
         (GAME INT PRIMARY KEY NOT NULL);
+        ''')
+
+    c.execute('''
+        CREATE TABLE PLAYER_RATINGS
+        (PLAYER_ID TEXT PRIMARY KEY NOT NULL,
+        MU REAL NOT_NULL,
+        SIGMA REAL NOT_NULL);
         ''')
 
     c.execute('''
@@ -221,6 +230,32 @@ def get_player_stats_weekly(player_id: str) -> Tuple[str, int, int, float]:
     rows = c.fetchall()
     conn.close()
     return rows[0]
+
+def update_player_rankings(game_number: int) -> None:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+
+    # Get scores and ratings for players who played in the current game
+    c.execute('''
+        SELECT DAILY_STATS.PLAYER_ID, SCORE, MU, SIGMA
+        FROM DAILY_STATS
+        INNER JOIN PLAYER_RATINGS ON PLAYER_RATINGS.PLAYER_ID = DAILY_STATS.PLAYER_ID
+        WHERE GAME_NUMBER = ?;
+    ''', (game_number,))
+    rows = c.fetchall()
+
+    # Add to list as tuples ex: [(r1, ), (r1, ), ...] (needed for rate function)
+    ratings = [(Rating(mu=row[2], sigma=row[3]),) for row in rows]
+    scores = [row[1] for row in rows]
+    rankings = [sorted(scores).index(score) for score in scores]
+
+    # Update with new ratings based on how a players score ranked for the current game
+    new_ratings = rate(ratings, ranks=rankings)
+    for i in range(len(rows)):
+        player_id = rows[i][0]
+        new_rating = new_ratings[i]
+        c.execute("UPDATE PLAYER_RATINGS SET MU = ?, SIGMA = ? WHERE PLAYER_ID = ?;", (new_rating.mu,new_rating.sigma,player_id,))
+    conn.close()
 
 def process_score(message: str) -> None:
     # 1. Check to see if player is new all time
