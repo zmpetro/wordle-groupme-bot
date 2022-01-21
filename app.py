@@ -68,6 +68,27 @@ def add_new_player_all_time(player_id: str) -> None:
     conn.commit()
     conn.close()
 
+def add_new_name(player_id: str, name: str) -> None:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("INSERT INTO NAMES VALUES (?, ?);", (player_id,name,))
+    conn.commit()
+    conn.close()
+
+def update_name(player_id: str, name: str) -> None:
+    # Should probably add a check to see if the name has changed before updating it
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("UPDATE NAMES SET NAME = ? WHERE PLAYER_ID = ?;", (name,player_id,))
+    conn.commit()
+    conn.close()
+
+def get_name(player_id: str) -> str:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT NAME FROM NAMES WHERE PLAYER_ID = ?;", (player_id,))
+    conn.close()
+
 def is_new_player_weekly(player_id: str) -> bool:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
@@ -135,18 +156,21 @@ def process_message(message: str) -> None:
     if (is_new_player_all_time(message['sender_id']) == True):
         print("New player all time. Adding player to database.")
         add_new_player_all_time(message['sender_id'])
+        add_new_name(message['sender_id'], message['name'])
     # 2. Check to see if player is new weekly
     if (is_new_player_weekly(message['sender_id']) == True):
         print("New player weekly. Adding player to table.")
         add_new_player_weekly(message['sender_id'])
-    # 3. Get the Wordle game # and the score
+    # 4. Update player name in case it has changed
+    update_name(message['sender_id'], message['name'])
+    # 5. Get the Wordle game # and the score
     # Game number is not being used for anything yet
     game_number, score = get_game_number_and_score(message['text'])
     print("Game number:", game_number, "Score:", score)
-    # 4. Update the all time standings
+    # 6. Update the all time standings
     print("Updating all time standings for player_id:", message['sender_id'], "score:", score)
     update_standings_all_time(message['sender_id'], score)
-    # 5. Update the weekly standings
+    # 7. Update the weekly standings
     print("Updating weekly standings for player_id:", message['sender_id'], "score:", score)
     update_standings_weekly(message['sender_id'], score)
 
