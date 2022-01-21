@@ -3,6 +3,8 @@ import json
 import re
 import sqlite3
 
+from typing import Tuple
+
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -78,6 +80,16 @@ def add_new_player_weekly(sender_id: str) -> None:
     conn.commit()
     conn.close()
 
+def get_game_number_and_score(text: str) -> Tuple[int, int]:
+    print(text)
+    found = re.search("\d+", text)
+    game_number = found.group(0)
+    found = re.search("[1-5X]\/\d", text)
+    score = found.group(0)[0]
+    if (score == 'X'):
+        score = 6
+    return game_number, score
+
 def process_message(message: str) -> None:
     # 1. Check to see if player is new all time
     if (is_new_player_all_time(message['sender_id']) == True):
@@ -87,6 +99,9 @@ def process_message(message: str) -> None:
     if (is_new_player_weekly(message['sender_id']) == True):
         print("New player weekly. Adding player to table.")
         add_new_player_weekly(message['sender_id'])
+    # 3. Get the Wordle game # and the score
+    game_number, score = get_game_number_and_score(message['text'])
+    print("Game number:", game_number, "Score:", score)
 
 app = Flask(__name__)
 
