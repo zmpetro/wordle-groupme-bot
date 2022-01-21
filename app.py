@@ -17,6 +17,12 @@ def setup_db(db_name: str) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     c.execute('''
+        CREATE TABLE DAILY_SCORES
+        (PLAYER_ID TEXT PRIMARY KEY NOT NULL,
+        SCORE INT NOT_NULL);
+        ''')
+
+    c.execute('''
         CREATE TABLE ALL_TIME_STATS
         (PLAYER_ID TEXT PRIMARY KEY NOT NULL,
         GAMES_PLAYED INT NOT_NULL,
