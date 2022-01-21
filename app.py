@@ -90,7 +90,32 @@ def get_game_number_and_score(text: str) -> Tuple[int, int]:
         score = 6
     return game_number, score
 
-def update_standings_all_time()
+def update_standings_all_time(player_id: str, score: int) -> None:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("UPDATE ALL_TIME_STATS SET GAMES_PLAYED = GAMES_PLAYED + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    c.execute("UPDATE ALL_TIME_STATS SET TOTAL_SCORE = TOTAL_SCORE + ? WHERE PLAYER_ID = ?;", (score,player_id,))
+    c.execute("UPDATE ALL_TIME_STATS SET AVERAGE_SCORE = TOTAL_SCORE*1.0 / GAMES_PLAYED WHERE PLAYER_ID = ?;", (player_id,))
+    conn.commit()
+    conn.close()
+
+def update_standings_weekly(player_id: str, score: int) -> None:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("UPDATE WEEKLY_STATS SET GAMES_PLAYED = GAMES_PLAYED + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    c.execute("UPDATE WEEKLY_STATS SET TOTAL_SCORE = TOTAL_SCORE + ? WHERE PLAYER_ID = ?;", (score,player_id,))
+    c.execute("UPDATE WEEKLY_STATS SET AVERAGE_SCORE = TOTAL_SCORE*1.0 / GAMES_PLAYED WHERE PLAYER_ID = ?;", (player_id,))
+    conn.commit()
+    conn.close()
+
+def get_player_stats_all_time(player_id: str) -> None:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT * FROM ALL_TIME_STATS WHERE PLAYER_ID = ?;", (player_id,))
+    rows = c.fetchall()
+    for row in rows:
+        print(row)
+    conn.close()
 
 def process_message(message: str) -> None:
     # 1. Check to see if player is new all time
@@ -102,10 +127,13 @@ def process_message(message: str) -> None:
         print("New player weekly. Adding player to table.")
         add_new_player_weekly(message['sender_id'])
     # 3. Get the Wordle game # and the score
+    # Game number is not being used for anything yet
     game_number, score = get_game_number_and_score(message['text'])
     print("Game number:", game_number, "Score:", score)
     # 4. Update the all time standings
-
+    print("Updating all time standings for player_id:", message['sender_id'], "score:", score)
+    update_standings_all_time(message['sender_id'], score)
+    get_player_stats_all_time(message['sender_id'])
 
 app = Flask(__name__)
 
