@@ -28,6 +28,12 @@ def setup_db(db_name: str) -> None:
         TOTAL_SCORE INT NOT_NULL,
         AVERAGE_SCORE REAL NOT_NULL);
         ''')
+
+    c.execute('''
+        CREATE TABLE NAMES
+        (PLAYER_ID TEXT PRIMARY KEY NOT NULL,
+        NAME TEXT NOT NULL);
+        ''')
     conn.commit()
     conn.close()
 
@@ -140,8 +146,9 @@ def process_message(message: str) -> None:
     # 4. Update the all time standings
     print("Updating all time standings for player_id:", message['sender_id'], "score:", score)
     update_standings_all_time(message['sender_id'], score)
-    stats = get_player_stats_all_time(message['sender_id'])
-    print(stats)
+    # 5. Update the weekly standings
+    print("Updating weekly standings for player_id:", message['sender_id'], "score:", score)
+    update_standings_weekly(message['sender_id'], score)
 
 app = Flask(__name__)
 
