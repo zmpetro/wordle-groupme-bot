@@ -13,7 +13,7 @@ def setup_db(db_name: str) -> None:
     c = conn.cursor()
     c.execute('''
         CREATE TABLE ALL_TIME_STATS
-        (PLAYER_ID INT PRIMARY KEY NOT NULL,
+        (PLAYER_ID TEXT PRIMARY KEY NOT NULL,
         GAMES_PLAYED INT NOT_NULL,
         TOTAL_SCORE INT NOT_NULL,
         AVERAGE_SCORE REAL NOT_NULL);
@@ -21,7 +21,7 @@ def setup_db(db_name: str) -> None:
 
     c.execute('''
         CREATE TABLE WEEKLY_STATS
-        (PLAYER_ID INT PRIMARY KEY NOT NULL,
+        (PLAYER_ID TEXT PRIMARY KEY NOT NULL,
         GAMES_PLAYED INT NOT_NULL,
         TOTAL_SCORE INT NOT_NULL,
         AVERAGE_SCORE REAL NOT_NULL);
@@ -31,14 +31,9 @@ def setup_db(db_name: str) -> None:
 
 db_name = "wordle.db"
 
-print("Connecting to database:", db_name)
 if not (os.path.exists(db_name)):
     print("Database does not exist. Creating new database.")
     setup_db(db_name)
-
-conn = sqlite3.connect(db_name)
-c = conn.cursor()
-print("Database connection successful.")
 
 def is_wordle_message(message: str) -> bool:
     found = re.search("^Wordle\s\d+\s[1-5X]\/\d", message)
@@ -48,8 +43,12 @@ def is_wordle_message(message: str) -> bool:
         return False
 
 def is_new_player_all_time(sender_id: str) -> bool:
-    print(type(sender_id))
-    print(sender_id)
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT EXISTS(SELECT 1 FROM ALL_TIME_STATS WHERE PLAYER_ID=\"?\");", (sender_id,))
+    rows = c.fetchall()
+    print(rows)
+    conn.close()
 
 def process_message(message: str) -> None:
     # 1. Check to see if player is new all time
