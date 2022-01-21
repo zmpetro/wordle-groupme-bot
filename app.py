@@ -8,38 +8,36 @@ from urllib.request import Request, urlopen
 
 from flask import Flask, request
 
-def setup_db(db_name):
-    # If DB exists, connect to it
-    # Else, set up new DB
-    if not (os.path.exists(db_name)):
-        print("Database does not exist. Creating new database.")
-        conn = sqlite3.connect(db_name)
-        c = conn.cursor()
-        c.execute('''
-            CREATE TABLE ALL_TIME_STATS
-            (PLAYER_ID INT PRIMARY KEY NOT NULL,
-            GAMES_PLAYED INT NOT_NULL,
-            TOTAL_SCORE INT NOT_NULL,
-            AVERAGE_SCORE REAL NOT_NULL);
-            ''')
+def setup_db(db_name: str) -> None:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE ALL_TIME_STATS
+        (PLAYER_ID INT PRIMARY KEY NOT NULL,
+        GAMES_PLAYED INT NOT_NULL,
+        TOTAL_SCORE INT NOT_NULL,
+        AVERAGE_SCORE REAL NOT_NULL);
+        ''')
 
-        c.execute('''
-            CREATE TABLE WEEKLY_STATS
-            (PLAYER_ID INT PRIMARY KEY NOT NULL,
-            GAMES_PLAYED INT NOT_NULL,
-            TOTAL_SCORE INT NOT_NULL,
-            AVERAGE_SCORE REAL NOT_NULL);
-            ''')
-        conn.commit()
-        return conn 
-    else:
-        print("Existing database found. Connecting to database.")
-        conn = sqlite3.connect(db_name)
-        return conn
+    c.execute('''
+        CREATE TABLE WEEKLY_STATS
+        (PLAYER_ID INT PRIMARY KEY NOT NULL,
+        GAMES_PLAYED INT NOT_NULL,
+        TOTAL_SCORE INT NOT_NULL,
+        AVERAGE_SCORE REAL NOT_NULL);
+        ''')
+    conn.commit()
+    conn.close()
 
 db_name = "wordle.db"
+
 print("Connecting to database:", db_name)
-conn = setup_db(db_name)
+if not (os.path.exists(db_name)):
+    print("Database does not exist. Creating new database.")
+    setup_db(db_name)
+
+conn = sqlite3.connect(db_name)
+c = conn.cursor()
 print("Database connection successful.")
 
 def is_wordle_message(message: str) -> bool:
@@ -49,13 +47,21 @@ def is_wordle_message(message: str) -> bool:
     else:
         return False
 
+def is_new_player_all_time(sender_id: str) -> bool:
+    print(type(sender_id))
+    print(sender_id)
+
+def process_message(message: str) -> None:
+    # 1. Check to see if player is new all time
+    is_new_player_all_time(message['sender_id'])
+
 app = Flask(__name__)
 
 @app.route('/', methods=['POST'])
 def webhook():
     message = request.get_json()
-    print(message)
     if(is_wordle_message(message['text']) == False):
         return "ok", 200
     # Message is a Wordle message
-
+    process_message(message)
+    return "ok", 200
