@@ -108,14 +108,21 @@ def update_standings_weekly(player_id: str, score: int) -> None:
     conn.commit()
     conn.close()
 
-def get_player_stats_all_time(player_id: str) -> None:
+def get_player_stats_all_time(player_id: str) -> Tuple[str, int, int, float]:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     c.execute("SELECT * FROM ALL_TIME_STATS WHERE PLAYER_ID = ?;", (player_id,))
     rows = c.fetchall()
-    for row in rows:
-        print(row)
     conn.close()
+    return rows[0]
+
+def get_player_stats_weekly(player_id: str) -> Tuple[str, int, int, float]:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT * FROM WEEKLY_STATS WHERE PLAYER_ID = ?;", (player_id,))
+    rows = c.fetchall()
+    conn.close()
+    return rows[0]
 
 def process_message(message: str) -> None:
     # 1. Check to see if player is new all time
@@ -133,7 +140,8 @@ def process_message(message: str) -> None:
     # 4. Update the all time standings
     print("Updating all time standings for player_id:", message['sender_id'], "score:", score)
     update_standings_all_time(message['sender_id'], score)
-    get_player_stats_all_time(message['sender_id'])
+    stats = get_player_stats_all_time(message['sender_id'])
+    print(stats)
 
 app = Flask(__name__)
 
