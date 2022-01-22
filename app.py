@@ -171,10 +171,10 @@ def get_game_number_and_score(text: str) -> Tuple[int, int]:
     print(text)
     found = re.search("\d+", text)
     game_number = found.group(0)
-    found = re.search("[1-5X]\/\d", text)
+    found = re.search("[1-6X]\/\d", text)
     score = found.group(0)[0]
     if (score == 'X'):
-        score = 6
+        score = 7
     return int(game_number), int(score)
 
 def update_game_number(game_number: int) -> None:
@@ -341,20 +341,19 @@ def print_leaderboard():
     msg = 'Ranked Leaderboard:\n'
     for i in range(len(leaderboard)):
         msg += str(i+1) +'. ' + get_name(leaderboard[i][0]) + '   mean: ' + ('%.3f' % leaderboard[i][1]) + '\n'
-    msg += '\nThe leaderboard updates at the beginning of a new day'
+    msg += '\nThe leaderboard updates at the beginning of a new day\n\n'
     send_message(msg)
 
 def print_help():
-    msg = '''
-        Available commands:
+    msg = '''Available commands:
 
-        help - print help menu
-        daily - print daily stats
-        weekly - print weekly stats
-        all - print all time stats
-        leaderboard - print ranked leaderboard
+help - show help menu
+daily - show daily stats
+weekly - show weekly stats
+all - show all time stats
+leaderboard - show ranked leaderboard
 
-        '''
+'''
     send_message(msg)
 
 def process_command(message: str) -> None:
