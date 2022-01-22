@@ -183,17 +183,20 @@ def stats_available() -> bool:
         return False
 
 def print_daily_stats():
-    if (stats_available == False):
+    if (stats_available() == False):
+        send_message("No stats available yet.")
         return
     send_message("Placeholder")
 
 def print_weekly_stats():
-    if (stats_available == False):
+    if (stats_available() == False):
+        send_message("No stats available yet.")
         return
     send_message("Placeholder")
 
 def print_all_time_stats():
-    if (stats_available == False):
+    if (stats_available() == False):
+        send_message("No stats available yet.")
         return
     send_message("Placeholder")
 
