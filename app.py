@@ -340,7 +340,7 @@ def print_leaderboard():
     leaderboard = get_leaderboard()
     msg = 'Ranked Leaderboard:\n'
     for i in range(len(leaderboard)):
-        msg += str(i+1) +'. ' + get_name(leaderboard[i][0]) + ' 🔸 TrueSkill: ' + ('%.3f' % leaderboard[i][1])
+        msg += '\n' + str(i+1) +'. ' + get_name(leaderboard[i][0]) + ' 🔸 TrueSkill: ' + ('%.3f' % leaderboard[i][1])
         if (i == 0):
             msg += ' 🥇'
         elif (i == 1):
