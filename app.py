@@ -9,6 +9,8 @@ from typing import Tuple
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from trueskill import TrueSkill, Rating, rate, expose
+
 from flask import Flask, request
 
 BOT_ID = os.environ['BOT_ID']
@@ -50,6 +52,13 @@ def setup_db(db_name: str) -> None:
     c.execute('''
         CREATE TABLE GAME_NUMBER
         (GAME INT PRIMARY KEY NOT NULL);
+        ''')
+
+    c.execute('''
+        CREATE TABLE PLAYER_RATINGS
+        (PLAYER_ID TEXT PRIMARY KEY NOT NULL,
+        MU REAL NOT_NULL,
+        SIGMA REAL NOT_NULL);
         ''')
 
     c.execute('''
@@ -175,9 +184,11 @@ def update_game_number(game_number: int) -> None:
     rows = c.fetchall()
     cur_game = rows[0][0]
     if (cur_game != game_number):
+        update_player_rankings()
         msg = "Welcome to Wordle " + str(game_number) + "!"
         send_message(msg)
         c.execute("UPDATE GAME_NUMBER SET GAME = ?;", (game_number,))
+        c.execute("DELETE FROM DAILY_STATS;")
         conn.commit()
     conn.close()
 
@@ -222,11 +233,68 @@ def get_player_stats_weekly(player_id: str) -> Tuple[str, int, int, float]:
     conn.close()
     return rows[0]
 
+def add_new_player_ratings(player_id: str) -> None:
+    rating = Rating()
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("INSERT INTO PLAYER_RATINGS VALUES (?, ?, ?);", (player_id,rating.mu,rating.sigma,))
+    conn.commit()
+    conn.close()
+
+def update_player_rankings() -> None:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+
+    # Get scores and ratings for players who played in the current game
+    c.execute('''
+        SELECT DAILY_STATS.PLAYER_ID, SCORE, MU, SIGMA
+        FROM DAILY_STATS, PLAYER_RATINGS
+        WHERE PLAYER_RATINGS.PLAYER_ID = DAILY_STATS.PLAYER_ID;
+    ''')
+    rows = c.fetchall()
+
+    if (len(rows) == 0):
+        return
+
+    # Add to list as tuples ex: [(r1, ), (r1, ), ...] (needed for rate function)
+    ratings = [(Rating(mu=row[2], sigma=row[3]),) for row in rows]
+    scores = [row[1] for row in rows]
+    rankings = [sorted(scores).index(score) for score in scores]
+    if len(ratings) <= 1:
+        print("Needs more than one player to rate.")
+        return
+
+    # Update with new ratings based on how a players score ranked for the current game
+    new_ratings = rate(ratings, ranks=rankings)
+    for i in range(len(rows)):
+        player_id = rows[i][0]
+        new_rating = new_ratings[i][0]
+        c.execute("UPDATE PLAYER_RATINGS SET MU = ? WHERE PLAYER_ID = ?;", (new_rating.mu,player_id,))
+        c.execute("UPDATE PLAYER_RATINGS SET SIGMA = ? WHERE PLAYER_ID = ?;", (new_rating.sigma,player_id,))
+    conn.commit()
+    conn.close()
+
+def get_leaderboard() -> Tuple[str, int]:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT * FROM PLAYER_RATINGS;")
+    rows = c.fetchall()
+    ratings = [Rating(mu=row[1],sigma=row[2]) for row in rows]
+    player_ids = [row[0] for row in rows]
+    leaderboard = sorted(ratings, key=expose, reverse=True)
+    player_leaderboard = []
+    for rating in leaderboard:
+        index = ratings.index(rating)
+        player_leaderboard.append([player_ids[index], expose(ratings[index])])
+    conn.close()
+    return player_leaderboard
+
 def process_score(message: str) -> None:
     # 1. Check to see if player is new all time
     if (is_new_player_all_time(message['sender_id']) == True):
         print("New player all time. Adding player to database.")
         add_new_player_all_time(message['sender_id'])
+        add_new_player_ratings(message['sender_id'])
         # Add a new name for the player as well
         add_new_name(message['sender_id'], message['name'])
     # 2. Check to see if player is new weekly
@@ -268,6 +336,14 @@ def print_weekly_stats():
 def print_all_time_stats():
     send_message("Placeholder")
 
+def print_leaderboard():
+    leaderboard = get_leaderboard()
+    msg = 'Ranked Leaderboard:\n'
+    for i in range(len(leaderboard)):
+        msg += str(i+1) +'. ' + get_name(leaderboard[i][0]) + '   mean: ' + ('%.3f' % leaderboard[i][1]) + '\n'
+    msg += '\nThe leaderboard updates at the beginning of a new day'
+    send_message(msg)
+
 def print_help():
     msg = '''
         Available commands:
@@ -276,6 +352,7 @@ def print_help():
         daily - print daily stats
         weekly - print weekly stats
         all - print all time stats
+        leaderboard - print ranked leaderboard
 
         '''
     send_message(msg)
@@ -292,6 +369,8 @@ def process_command(message: str) -> None:
         print_weekly_stats()
     elif (command == "all"):
         print_all_time_stats()
+    elif (command == "leaderboard"):
+        print_leaderboard()
     else:
         print_help()
 
