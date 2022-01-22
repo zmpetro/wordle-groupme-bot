@@ -21,8 +21,7 @@ def setup_db(db_name: str) -> None:
     c.execute('''
         CREATE TABLE DAILY_STATS
         (PLAYER_ID TEXT PRIMARY KEY NOT NULL,
-        SCORE INT NOT_NULL,
-        RANK INT NOT_NULL);
+        SCORE INT NOT_NULL);
         ''')
 
     c.execute('''
@@ -31,7 +30,13 @@ def setup_db(db_name: str) -> None:
         GAMES_PLAYED INT NOT_NULL,
         TOTAL_SCORE INT NOT_NULL,
         AVERAGE_SCORE REAL NOT_NULL,
-        RANK INT NOT NULL);
+        NUM_1S INT DEFAULT 0,
+        NUM_2S INT DEFAULT 0,
+        NUM_3S INT DEFAULT 0,
+        NUM_4S INT DEFAULT 0,
+        NUM_5S INT DEFAULT 0,
+        NUM_6S INT DEFAULT 0,
+        NUM_XS INT DEFAULT 0);
         ''')
 
     c.execute('''
@@ -40,7 +45,13 @@ def setup_db(db_name: str) -> None:
         GAMES_PLAYED INT NOT_NULL,
         TOTAL_SCORE INT NOT_NULL,
         AVERAGE_SCORE REAL NOT_NULL,
-        RANK INT NOT NULL);
+        NUM_1S INT DEFAULT 0,
+        NUM_2S INT DEFAULT 0,
+        NUM_3S INT DEFAULT 0,
+        NUM_4S INT DEFAULT 0,
+        NUM_5S INT DEFAULT 0,
+        NUM_6S INT DEFAULT 0,
+        NUM_XS INT DEFAULT 0);
         ''')
 
     c.execute('''
@@ -122,7 +133,7 @@ def is_new_player_all_time(player_id: str) -> bool:
 def add_new_player_all_time(player_id: str) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.execute("INSERT INTO ALL_TIME_STATS VALUES (?, 0, 0, 0.0, 0);", (player_id,))
+    c.execute("INSERT INTO ALL_TIME_STATS VALUES (?,0,0,0.0,0,0,0,0,0,0,0);", (player_id,))
     conn.commit()
     conn.close()
 
@@ -163,7 +174,7 @@ def is_new_player_weekly(player_id: str) -> bool:
 def add_new_player_weekly(player_id: str) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.execute("INSERT INTO WEEKLY_STATS VALUES (?, 0, 0, 0.0, 0);", (player_id,))
+    c.execute("INSERT INTO WEEKLY_STATS VALUES (?,0,0,0.0,0,0,0,0,0,0,0);", (player_id,))
     conn.commit()
     conn.close()
 
@@ -195,7 +206,7 @@ def update_game_number(game_number: int) -> None:
 def update_standings_daily(player_id: str, score: int) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.execute("INSERT INTO DAILY_STATS VALUES (?, ?, 0);", (player_id,score,))
+    c.execute("INSERT INTO DAILY_STATS VALUES (?,?);", (player_id,score,))
     conn.commit()
     conn.close()
 
@@ -205,6 +216,20 @@ def update_standings_all_time(player_id: str, score: int) -> None:
     c.execute("UPDATE ALL_TIME_STATS SET GAMES_PLAYED = GAMES_PLAYED + 1 WHERE PLAYER_ID = ?;", (player_id,))
     c.execute("UPDATE ALL_TIME_STATS SET TOTAL_SCORE = TOTAL_SCORE + ? WHERE PLAYER_ID = ?;", (score,player_id,))
     c.execute("UPDATE ALL_TIME_STATS SET AVERAGE_SCORE = TOTAL_SCORE*1.0 / GAMES_PLAYED WHERE PLAYER_ID = ?;", (player_id,))
+    if (score == 1):
+        c.execute("UPDATE ALL_TIME_STATS SET NUM_1S = NUM_1S + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    elif (score == 2):
+        c.execute("UPDATE ALL_TIME_STATS SET NUM_2S = NUM_2S + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    elif (score == 3):
+        c.execute("UPDATE ALL_TIME_STATS SET NUM_3S = NUM_3S + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    elif (score == 4):
+        c.execute("UPDATE ALL_TIME_STATS SET NUM_4S = NUM_4S + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    elif (score == 5):
+        c.execute("UPDATE ALL_TIME_STATS SET NUM_5S = NUM_5S + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    elif (score == 6):
+        c.execute("UPDATE ALL_TIME_STATS SET NUM_6S = NUM_6S + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    elif (score == 7):
+        c.execute("UPDATE ALL_TIME_STATS SET NUM_XS = NUM_XS + 1 WHERE PLAYER_ID = ?;", (player_id,))
     conn.commit()
     conn.close()
 
@@ -214,6 +239,20 @@ def update_standings_weekly(player_id: str, score: int) -> None:
     c.execute("UPDATE WEEKLY_STATS SET GAMES_PLAYED = GAMES_PLAYED + 1 WHERE PLAYER_ID = ?;", (player_id,))
     c.execute("UPDATE WEEKLY_STATS SET TOTAL_SCORE = TOTAL_SCORE + ? WHERE PLAYER_ID = ?;", (score,player_id,))
     c.execute("UPDATE WEEKLY_STATS SET AVERAGE_SCORE = TOTAL_SCORE*1.0 / GAMES_PLAYED WHERE PLAYER_ID = ?;", (player_id,))
+    if (score == 1):
+        c.execute("UPDATE WEEKLY_STATS SET NUM_1S = NUM_1S + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    elif (score == 2):
+        c.execute("UPDATE WEEKLY_STATS SET NUM_2S = NUM_2S + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    elif (score == 3):
+        c.execute("UPDATE WEEKLY_STATS SET NUM_3S = NUM_3S + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    elif (score == 4):
+        c.execute("UPDATE WEEKLY_STATS SET NUM_4S = NUM_4S + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    elif (score == 5):
+        c.execute("UPDATE WEEKLY_STATS SET NUM_5S = NUM_5S + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    elif (score == 6):
+        c.execute("UPDATE WEEKLY_STATS SET NUM_6S = NUM_6S + 1 WHERE PLAYER_ID = ?;", (player_id,))
+    elif (score == 7):
+        c.execute("UPDATE WEEKLY_STATS SET NUM_XS = NUM_XS + 1 WHERE PLAYER_ID = ?;", (player_id,))
     conn.commit()
     conn.close()
 
@@ -314,16 +353,16 @@ def process_score(message: str) -> None:
     if (is_new_player_daily(message['sender_id']) == True):
         update_standings_daily(message['sender_id'], score)
         msg = get_name(message['sender_id'])
-        msg = msg + " has submitted his score for today. Beautiful."
+        msg = msg + " has submitted his Wordle for today. Beautiful."
         send_message(msg)
     else:
         msg = get_name(message['sender_id'])
         msg = msg + " has already submitted a score for today. Not submitting score."
         send_message(msg)
-    # 6. Update the all time standings
+    # 7. Update the all time standings
     print("Updating all time standings for player_id:", message['sender_id'], "score:", score)
     update_standings_all_time(message['sender_id'], score)
-    # 7. Update the weekly standings
+    # 8. Update the weekly standings
     print("Updating weekly standings for player_id:", message['sender_id'], "score:", score)
     update_standings_weekly(message['sender_id'], score)
 
