@@ -209,13 +209,41 @@ def print_weekly_stats():
     if (stats_available() == False):
         send_message("No stats available yet.")
         return
-    send_message("Placeholder")
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT * FROM WEEKLY_STATS;")
+    rows = c.fetchall()
+    conn.close()
+    rows = sorted(rows, key = lambda x: x[3])
+    msg = ""
+    idx = 1
+    for row in rows:
+        msg = msg + str(idx) + ". " + get_name(row[0]) + "\n" 
+        msg = msg + "Games played: " + str(row[1]) + "\n"
+        msg = msg + "Total score: " + str(row[2]) + "\n"
+        msg = msg + "Average score: " + str(row[3])[:5] + "/6\n\n"
+        idx = idx + 1
+    send_message(msg)
 
 def print_all_time_stats():
     if (stats_available() == False):
         send_message("No stats available yet.")
         return
-    send_message("Placeholder")
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT * FROM ALL_TIME_STATS;")
+    rows = c.fetchall()
+    conn.close()
+    rows = sorted(rows, key = lambda x: x[3])
+    msg = ""
+    idx = 1
+    for row in rows:
+        msg = msg + str(idx) + ". " + get_name(row[0]) + "\n" 
+        msg = msg + "Games played: " + str(row[1]) + "\n"
+        msg = msg + "Total score: " + str(row[2]) + "\n"
+        msg = msg + "Average score: " + str(row[3])[:5] + "/6\n\n"
+        idx = idx + 1
+    send_message(msg)
 
 def is_new_player_weekly(player_id: str) -> bool:
     conn = sqlite3.connect(db_name)
