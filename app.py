@@ -238,7 +238,7 @@ def update_week_number() -> None:
     print_weekly_stats()
     weekly_winners, avg_score = get_weekly_winners()
     msg = "Last week's winner(s):\n\n"
-    msg = msg + weekly_winners + "\nwith an average score of " + avg_score
+    msg = msg + weekly_winners + "\nwith an average score of: " + avg_score
     send_message(msg)
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
@@ -246,22 +246,53 @@ def update_week_number() -> None:
     conn.commit()
     conn.close()
 
+def get_daily_winners() -> Tuple[str, str]:
+    # Returns the player(s) with the highest score for the day
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute('SELECT PLAYER_ID,SCORE FROM DAILY_STATS;')
+    rows = c.fetchall()
+    conn.close()
+    highest_score = min(rows, key = lambda x: x[1])[1]
+    winners = ""
+    for row in rows:
+        if (row[1] == highest_score):
+            winner_name = get_name(row[0])
+            winners = winners + winner_name + "\n"
+    return winners, str(highest_score)
+
 def update_game_number(game_number: int) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     c.execute("SELECT GAME FROM GAME_NUMBER;")
     rows = c.fetchall()
+    conn.close()
     cur_game = rows[0][0]
-    if (cur_game != game_number):
-        # If it is Monday, update the week number
-        if (datetime.today().weekday() == 0):
-            update_week_number()
-        update_player_rankings()
-        msg = "Welcome to Wordle " + str(game_number) + "!"
-        send_message(msg)
-        c.execute("UPDATE GAME_NUMBER SET GAME = ?;", (game_number,))
-        c.execute("DELETE FROM DAILY_STATS;")
-        conn.commit()
+
+    if (cur_game == game_number):
+        return
+
+    # If it is Monday, update the week number
+    if (datetime.today().weekday() == 0):
+        update_week_number()
+    update_player_rankings()
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("UPDATE GAME_NUMBER SET GAME = ?;", (game_number,))
+    conn.commit()
+    conn.close()
+    msg = "Welcome to Wordle " + str(game_number) + "!\n\n"
+    msg = msg + "Yesterday's scores:"
+    send_message(msg)
+    print_daily_stats()
+    daily_winners, score = get_daily_winners()
+    msg = "Yesterday's winner(s):\n\n"
+    msg = msg + daily_winners + "\nwith a score of: " + score
+    send_message(msg)
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("DELETE FROM DAILY_STATS;")
+    conn.commit()
     conn.close()
 
 def update_standings_daily(player_id: str, score: int) -> None:
