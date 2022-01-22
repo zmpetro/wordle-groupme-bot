@@ -171,6 +171,15 @@ def get_name(player_id: str) -> str:
     conn.close()
     return rows[0][0]
 
+def print_daily_stats():
+    send_message("Placeholder")
+
+def print_weekly_stats():
+    send_message("Placeholder")
+
+def print_all_time_stats():
+    send_message("Placeholder")
+
 def is_new_player_weekly(player_id: str) -> bool:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
@@ -224,8 +233,11 @@ def update_week_number() -> None:
     conn.commit()
     conn.close()
     msg = "Welcome to Wordle week " + str(cur_week) + "!\n\n"
+    msg = msg + "Last week's stats:"
+    send_message(msg)
+    print_weekly_stats()
     weekly_winners, avg_score = get_weekly_winners()
-    msg = msg + "Last week's winner(s):\n\n"
+    msg = "Last week's winner(s):\n\n"
     msg = msg + weekly_winners + "\nwith an average score of " + avg_score
     send_message(msg)
     conn = sqlite3.connect(db_name)
@@ -414,15 +426,6 @@ def process_score(message: str) -> None:
     # 8. Update the weekly standings
     print("Updating weekly standings for player_id:", message['sender_id'], "score:", score)
     update_standings_weekly(message['sender_id'], score)
-
-def print_daily_stats():
-    send_message("Placeholder")
-
-def print_weekly_stats():
-    send_message("Placeholder")
-
-def print_all_time_stats():
-    send_message("Placeholder")
 
 def print_leaderboard():
     leaderboard = get_leaderboard()
