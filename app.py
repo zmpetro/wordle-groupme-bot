@@ -183,7 +183,6 @@ def update_game_number(game_number: int) -> None:
     c.execute("SELECT GAME FROM GAME_NUMBER;")
     rows = c.fetchall()
     cur_game = rows[0][0]
-    print(cur_game)
     if (cur_game != game_number):
         update_player_rankings()
         msg = "Welcome to Wordle " + str(game_number) + "!"
@@ -267,7 +266,6 @@ def update_player_rankings() -> None:
 
     # Update with new ratings based on how a players score ranked for the current game
     new_ratings = rate(ratings, ranks=rankings)
-    print(new_ratings)
     for i in range(len(rows)):
         player_id = rows[i][0]
         new_rating = new_ratings[i][0]
