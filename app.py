@@ -186,7 +186,6 @@ def update_game_number(game_number: int) -> None:
     print(cur_game)
     if (cur_game != game_number):
         update_player_rankings()
-        print(get_leaderboard())
         msg = "Welcome to Wordle " + str(game_number) + "!"
         send_message(msg)
         c.execute("UPDATE GAME_NUMBER SET GAME = ?;", (game_number,))
@@ -235,17 +234,6 @@ def get_player_stats_weekly(player_id: str) -> Tuple[str, int, int, float]:
     conn.close()
     return rows[0]
 
-def is_new_player_ratings(player_id: str) -> bool:
-    conn = sqlite3.connect(db_name)
-    c = conn.cursor()
-    c.execute("SELECT EXISTS(SELECT 1 FROM PLAYER_RATINGS WHERE PLAYER_ID = ?);", (player_id,))
-    rows = c.fetchall()
-    conn.close()
-    if (rows[0][0] == 0):
-        return True
-    else:
-        return False
-
 def add_new_player_ratings(player_id: str) -> None:
     rating = Rating()
     conn = sqlite3.connect(db_name)
@@ -283,7 +271,6 @@ def update_player_rankings() -> None:
     for i in range(len(rows)):
         player_id = rows[i][0]
         new_rating = new_ratings[i][0]
-        print(new_rating)
         c.execute("UPDATE PLAYER_RATINGS SET MU = ? WHERE PLAYER_ID = ?;", (new_rating.mu,player_id,))
         c.execute("UPDATE PLAYER_RATINGS SET SIGMA = ? WHERE PLAYER_ID = ?;", (new_rating.sigma,player_id,))
     conn.commit()
@@ -294,14 +281,13 @@ def get_leaderboard() -> Tuple[str, int]:
     c = conn.cursor()
     c.execute("SELECT * FROM PLAYER_RATINGS;")
     rows = c.fetchall()
-    print(rows)
     ratings = [Rating(mu=row[1],sigma=row[2]) for row in rows]
     player_ids = [row[0] for row in rows]
     leaderboard = sorted(ratings, key=expose, reverse=True)
     player_leaderboard = []
     for rating in leaderboard:
         index = ratings.index(rating)
-        player_leaderboard.append([player_ids[index], ratings[index]])
+        player_leaderboard.append([player_ids[index], expose(ratings[index])])
     conn.close()
     return player_leaderboard
 
@@ -352,6 +338,14 @@ def print_weekly_stats():
 def print_all_time_stats():
     send_message("Placeholder")
 
+def print_leaderboard():
+    leaderboard = get_leaderboard()
+    msg = 'Ranked Leaderboard:\n'
+    for i in range(len(leaderboard)):
+        msg += str(i+1) +'. ' + get_name(leaderboard[i][0]) + '   mean: ' + ('%.3f' % leaderboard[i][1]) + '\n'
+    msg += '\nThe leaderboard updates at the beginning of a new day'
+    send_message(msg)
+
 def print_help():
     msg = '''
         Available commands:
@@ -360,6 +354,7 @@ def print_help():
         daily - print daily stats
         weekly - print weekly stats
         all - print all time stats
+        leaderboard - print ranked leaderboard
 
         '''
     send_message(msg)
@@ -376,6 +371,8 @@ def process_command(message: str) -> None:
         print_weekly_stats()
     elif (command == "all"):
         print_all_time_stats()
+    elif (command == "leaderboard"):
+        print_leaderboard()
     else:
         print_help()
 
