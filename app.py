@@ -4,6 +4,8 @@ import re
 import sqlite3
 import requests
 
+from datetime import datetime
+
 from typing import Tuple
 
 from urllib.parse import urlencode
@@ -66,6 +68,11 @@ def setup_db(db_name: str) -> None:
         ''')
 
     c.execute('''
+        CREATE TABLE WEEK_NUMBER
+        (WEEK INT PRIMARY KEY NOT NULL);
+        ''')
+
+    c.execute('''
         CREATE TABLE PLAYER_RATINGS
         (PLAYER_ID TEXT PRIMARY KEY NOT NULL,
         MU REAL NOT_NULL,
@@ -74,6 +81,10 @@ def setup_db(db_name: str) -> None:
 
     c.execute('''
         INSERT INTO GAME_NUMBER VALUES (0);
+    ''')
+
+    c.execute('''
+        INSERT INTO WEEK_NUMBER VALUES (1);
     ''')
     conn.commit()
     conn.close()
@@ -188,6 +199,41 @@ def get_game_number_and_score(text: str) -> Tuple[int, int]:
         score = 7
     return int(game_number), int(score)
 
+def get_weekly_winners() -> Tuple[str, str]:
+    # Returns the player(s) with the highest average scores for the week
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute('SELECT PLAYER_ID,AVERAGE_SCORE FROM WEEKLY_STATS;')
+    rows = c.fetchall()
+    conn.close()
+    highest_avg = min(rows, key = lambda x: x[1])[1]
+    winners = ""
+    for row in rows:
+        if (row[1] == highest_avg):
+            winner_name = get_name(row[0])
+            winners = winners + winner_name + "\n"
+    return winners, str(highest_avg)
+
+def update_week_number() -> None:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT WEEK FROM WEEK_NUMBER;")
+    rows = c.fetchall()
+    cur_week = rows[0][0] + 1
+    c.execute("UPDATE WEEK_NUMBER SET WEEK = ?;", (cur_week,))
+    conn.commit()
+    conn.close()
+    msg = "Welcome to Wordle week " + str(cur_week) + "!\n\n"
+    weekly_winners, avg_score = get_weekly_winners()
+    msg = msg + "Last week's winner(s):\n\n"
+    msg = msg + weekly_winners + "\nwith an average score of " + avg_score
+    send_message(msg)
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("DELETE FROM WEEKLY_STATS;")
+    conn.commit()
+    conn.close()
+
 def update_game_number(game_number: int) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
@@ -195,6 +241,9 @@ def update_game_number(game_number: int) -> None:
     rows = c.fetchall()
     cur_game = rows[0][0]
     if (cur_game != game_number):
+        # If it is Monday, update the week number
+        if (datetime.today().weekday() == 0):
+            update_week_number()
         update_player_rankings()
         msg = "Welcome to Wordle " + str(game_number) + "!"
         send_message(msg)
@@ -336,18 +385,18 @@ def process_score(message: str) -> None:
         add_new_player_ratings(message['sender_id'])
         # Add a new name for the player as well
         add_new_name(message['sender_id'], message['name'])
-    # 2. Check to see if player is new weekly
+    # 2. Update player name in case it has changed
+    update_name(message['sender_id'], message['name'])
+    # 3. Get the Wordle game # and the score
+    game_number, score = get_game_number_and_score(message['text'])
+    print("Game number:", game_number, "Score:", score)
+    # 4. Update the Wordle game #
+    print("Updating the game number to", game_number)
+    update_game_number(game_number)
+    # 5. Check to see if player is new weekly
     if (is_new_player_weekly(message['sender_id']) == True):
         print("New player weekly. Adding player to table.")
         add_new_player_weekly(message['sender_id'])
-    # 3. Update player name in case it has changed
-    update_name(message['sender_id'], message['name'])
-    # 4. Get the Wordle game # and the score
-    game_number, score = get_game_number_and_score(message['text'])
-    print("Game number:", game_number, "Score:", score)
-    # 5. Update the Wordle game #
-    print("Updating the game number to", game_number)
-    update_game_number(game_number)
     # 6. Update the daily scores table
     print("Updating daily score for player_id:", message['sender_id'], "score:", score)
     if (is_new_player_daily(message['sender_id']) == True):
