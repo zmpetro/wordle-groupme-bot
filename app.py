@@ -84,7 +84,7 @@ def setup_db(db_name: str) -> None:
     ''')
 
     c.execute('''
-        INSERT INTO WEEK_NUMBER VALUES (1);
+        INSERT INTO WEEK_NUMBER VALUES (0);
     ''')
     conn.commit()
     conn.close()
@@ -106,7 +106,7 @@ def send_message(text: str) -> None:
     resp.raise_for_status()
 
 def is_wordle_score(message: str) -> bool:
-    found = re.search("^Wordle\s\d+\s[1-5X]\/\d", message)
+    found = re.search("^Wordle\s\d+\s[1-6X]\/\d", message)
     if (found):
         return True
     else:
@@ -186,7 +186,24 @@ def print_daily_stats():
     if (stats_available() == False):
         send_message("No stats available yet.")
         return
-    send_message("Placeholder")
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT PLAYER_ID,SCORE FROM DAILY_STATS;")
+    rows = c.fetchall()
+    conn.close()
+    rows = sorted(rows, key = lambda x: x[1])
+    msg = ""
+    for row in rows:
+        msg = msg + get_name(row[0]) + ": " 
+        if (row[1] == 7):
+            msg = msg + "X"
+        else:
+            msg = msg + str(row[1])
+        msg = msg + "/6"
+        if (row[1] == 7):
+            msg = msg + " 💀"
+        msg = msg + "\n"
+    send_message(msg)
 
 def print_weekly_stats():
     if (stats_available() == False):
@@ -259,7 +276,7 @@ def update_week_number() -> None:
         print_weekly_stats()
         weekly_winners, avg_score = get_weekly_winners()
         msg = "Last week's winner(s):\n\n"
-        msg = msg + weekly_winners + "\nwith an average score of: " + avg_score
+        msg = msg + weekly_winners + "\nwith an average score of: " + avg_score[:5] + "/6"
         send_message(msg)
     else:
         send_message("No stats available yet.")
