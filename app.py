@@ -9,7 +9,7 @@ from typing import Tuple
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from trueskill import Rating, rate
+from trueskill import TrueSkill, Rating, rate, expose
 
 from flask import Flask, request
 
@@ -183,10 +183,14 @@ def update_game_number(game_number: int) -> None:
     c.execute("SELECT GAME FROM GAME_NUMBER;")
     rows = c.fetchall()
     cur_game = rows[0][0]
+    print(cur_game)
     if (cur_game != game_number):
+        update_player_rankings()
+        print(get_leaderboard())
         msg = "Welcome to Wordle " + str(game_number) + "!"
         send_message(msg)
         c.execute("UPDATE GAME_NUMBER SET GAME = ?;", (game_number,))
+        c.execute("DELETE FROM DAILY_STATS;")
         conn.commit()
     conn.close()
 
@@ -231,37 +235,82 @@ def get_player_stats_weekly(player_id: str) -> Tuple[str, int, int, float]:
     conn.close()
     return rows[0]
 
-def update_player_rankings(game_number: int) -> None:
+def is_new_player_ratings(player_id: str) -> bool:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT EXISTS(SELECT 1 FROM PLAYER_RATINGS WHERE PLAYER_ID = ?);", (player_id,))
+    rows = c.fetchall()
+    conn.close()
+    if (rows[0][0] == 0):
+        return True
+    else:
+        return False
+
+def add_new_player_ratings(player_id: str) -> None:
+    rating = Rating()
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("INSERT INTO PLAYER_RATINGS VALUES (?, ?, ?);", (player_id,rating.mu,rating.sigma,))
+    conn.commit()
+    conn.close()
+
+def update_player_rankings() -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
 
     # Get scores and ratings for players who played in the current game
     c.execute('''
         SELECT DAILY_STATS.PLAYER_ID, SCORE, MU, SIGMA
-        FROM DAILY_STATS
-        INNER JOIN PLAYER_RATINGS ON PLAYER_RATINGS.PLAYER_ID = DAILY_STATS.PLAYER_ID
-        WHERE GAME_NUMBER = ?;
-    ''', (game_number,))
+        FROM DAILY_STATS, PLAYER_RATINGS
+        WHERE PLAYER_RATINGS.PLAYER_ID = DAILY_STATS.PLAYER_ID;
+    ''')
     rows = c.fetchall()
+
+    if (len(rows) == 0):
+        return
 
     # Add to list as tuples ex: [(r1, ), (r1, ), ...] (needed for rate function)
     ratings = [(Rating(mu=row[2], sigma=row[3]),) for row in rows]
     scores = [row[1] for row in rows]
     rankings = [sorted(scores).index(score) for score in scores]
+    if len(ratings) <= 1:
+        print("Needs more than one player to rate.")
+        return
 
     # Update with new ratings based on how a players score ranked for the current game
     new_ratings = rate(ratings, ranks=rankings)
+    print(new_ratings)
     for i in range(len(rows)):
         player_id = rows[i][0]
-        new_rating = new_ratings[i]
-        c.execute("UPDATE PLAYER_RATINGS SET MU = ?, SIGMA = ? WHERE PLAYER_ID = ?;", (new_rating.mu,new_rating.sigma,player_id,))
+        new_rating = new_ratings[i][0]
+        print(new_rating)
+        c.execute("UPDATE PLAYER_RATINGS SET MU = ? WHERE PLAYER_ID = ?;", (new_rating.mu,player_id,))
+        c.execute("UPDATE PLAYER_RATINGS SET SIGMA = ? WHERE PLAYER_ID = ?;", (new_rating.sigma,player_id,))
+    conn.commit()
     conn.close()
+
+def get_leaderboard() -> Tuple[str, int]:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT * FROM PLAYER_RATINGS;")
+    rows = c.fetchall()
+    print(rows)
+    ratings = [Rating(mu=row[1],sigma=row[2]) for row in rows]
+    player_ids = [row[0] for row in rows]
+    leaderboard = sorted(ratings, key=expose, reverse=True)
+    player_leaderboard = []
+    for rating in leaderboard:
+        index = ratings.index(rating)
+        player_leaderboard.append([player_ids[index], ratings[index]])
+    conn.close()
+    return player_leaderboard
 
 def process_score(message: str) -> None:
     # 1. Check to see if player is new all time
     if (is_new_player_all_time(message['sender_id']) == True):
         print("New player all time. Adding player to database.")
         add_new_player_all_time(message['sender_id'])
+        add_new_player_ratings(message['sender_id'])
         # Add a new name for the player as well
         add_new_name(message['sender_id'], message['name'])
     # 2. Check to see if player is new weekly
