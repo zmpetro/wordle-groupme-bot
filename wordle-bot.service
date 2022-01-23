@@ -1,0 +1,16 @@
+[Unit]
+Description=Wordle bot for GroupMe
+After=network.target
+
+[Service]
+Type=simple
+User=zmpetro
+WorkingDirectory=/home/zmpetro/wordle_bot_prod
+Environment=FLASK_APP=app
+Environment=FLASK_ENV=production
+Environment=BOT_ID=
+ExecStart=/home/zmpetro/.local/bin/flask run --host=0.0.0.0 --port=5000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
