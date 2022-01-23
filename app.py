@@ -515,9 +515,9 @@ def process_score(message: str) -> None:
     print("Updating daily score for player_id:", message['sender_id'], "score:", score)
     if (is_new_player_daily(message['sender_id']) == True):
         update_standings_daily(message['sender_id'], score)
-        msg = get_name(message['sender_id'])
-        msg = msg + " has submitted his Wordle for today. Beautiful."
-        send_message(msg)
+        # msg = get_name(message['sender_id'])
+        # msg = msg + " has submitted his Wordle for today. Beautiful."
+        # send_message(msg)
     else:
         msg = get_name(message['sender_id'])
         msg = msg + " has already submitted a score for today. Not submitting score."
