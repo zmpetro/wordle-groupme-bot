@@ -182,17 +182,30 @@ def stats_available() -> bool:
     else:
         return False
 
-def print_daily_stats():
+def personal_stats_available(player_id: str) -> bool:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT * FROM ALL_TIME_STATS WHERE PLAYER_ID = ?;", (player_id,))
+    rows = c.fetchall()
+    conn.close()
+    if (rows):
+        return True
+    else:
+        return False
+
+def print_daily_stats() -> None:
     if (stats_available() == False):
         send_message("No stats available yet.")
         return
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
+    c.execute("SELECT GAME FROM GAME_NUMBER;")
+    game_number = str(c.fetchall()[0][0])
     c.execute("SELECT PLAYER_ID,SCORE FROM DAILY_STATS;")
     rows = c.fetchall()
     conn.close()
     rows = sorted(rows, key = lambda x: x[1])
-    msg = ""
+    msg = "Wordle " + game_number + "\n\n"
     for row in rows:
         msg = msg + get_name(row[0]) + ": " 
         if (row[1] == 7):
@@ -205,17 +218,19 @@ def print_daily_stats():
         msg = msg + "\n"
     send_message(msg)
 
-def print_weekly_stats():
+def print_weekly_stats() -> None:
     if (stats_available() == False):
         send_message("No stats available yet.")
         return
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
+    c.execute("SELECT WEEK FROM WEEK_NUMBER;")
+    week_number = str(c.fetchall()[0][0])
     c.execute("SELECT * FROM WEEKLY_STATS;")
     rows = c.fetchall()
     conn.close()
     rows = sorted(rows, key = lambda x: x[3])
-    msg = ""
+    msg = "Wordle Week " + week_number + "\n\n"
     idx = 1
     for row in rows:
         msg = msg + str(idx) + ". " + get_name(row[0]) + "\n" 
@@ -225,7 +240,7 @@ def print_weekly_stats():
         idx = idx + 1
     send_message(msg)
 
-def print_all_time_stats():
+def print_all_time_stats() -> None:
     if (stats_available() == False):
         send_message("No stats available yet.")
         return
@@ -235,7 +250,7 @@ def print_all_time_stats():
     rows = c.fetchall()
     conn.close()
     rows = sorted(rows, key = lambda x: x[3])
-    msg = ""
+    msg = "All Time Stats\n\n"
     idx = 1
     for row in rows:
         msg = msg + str(idx) + ". " + get_name(row[0]) + "\n" 
@@ -243,6 +258,46 @@ def print_all_time_stats():
         msg = msg + "Total score: " + str(row[2]) + "\n"
         msg = msg + "Average score: " + str(row[3])[:5] + "/6\n\n"
         idx = idx + 1
+    send_message(msg)
+
+def print_my_stats(player_id: str) -> None:
+    if (personal_stats_available(player_id) == False):
+        send_message("No stats available yet.")
+        return
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+
+    c.execute("SELECT * FROM ALL_TIME_STATS WHERE PLAYER_ID = ?;", (player_id,))
+    rows = c.fetchall()
+    msg = get_name(player_id) + "\n\nAll time stats\n\n"
+    for row in rows:
+        msg = msg + "Games played: " + str(row[1]) + "\n"
+        msg = msg + "Total score: " + str(row[2]) + "\n"
+        msg = msg + "Average score: " + str(row[3])[:5] + "/6\n"
+        msg = msg + "# of 1/6: " + str(row[4]) + "\n"
+        msg = msg + "# of 2/6: " + str(row[5]) + "\n"
+        msg = msg + "# of 3/6: " + str(row[6]) + "\n"
+        msg = msg + "# of 4/6: " + str(row[7]) + "\n"
+        msg = msg + "# of 5/6: " + str(row[8]) + "\n"
+        msg = msg + "# of 6/6: " + str(row[9]) + "\n"
+        msg = msg + "# of X/6: " + str(row[10]) + "\n\n"
+
+    c.execute("SELECT * FROM WEEKLY_STATS WHERE PLAYER_ID = ?;", (player_id,))
+    rows = c.fetchall()
+    conn.close()
+    msg = msg + "Weekly stats\n\n"
+    for row in rows:
+        msg = msg + "Games played: " + str(row[1]) + "\n"
+        msg = msg + "Total score: " + str(row[2]) + "\n"
+        msg = msg + "Average score: " + str(row[3])[:5] + "/6\n\n"
+        msg = msg + "# of 1/6: " + str(row[4]) + "\n"
+        msg = msg + "# of 2/6: " + str(row[5]) + "\n"
+        msg = msg + "# of 3/6: " + str(row[6]) + "\n"
+        msg = msg + "# of 4/6: " + str(row[7]) + "\n"
+        msg = msg + "# of 5/6: " + str(row[8]) + "\n"
+        msg = msg + "# of 6/6: " + str(row[9]) + "\n"
+        msg = msg + "# of X/6: " + str(row[10]) + "\n\n"
+
     send_message(msg)
 
 def is_new_player_weekly(player_id: str) -> bool:
@@ -553,6 +608,7 @@ help - show help menu
 daily - show daily stats
 weekly - show weekly stats
 all - show all time stats
+my - show personal stats
 leaderboard - show ranked leaderboard
 
 '''
@@ -570,6 +626,8 @@ def process_command(message: str) -> None:
         print_weekly_stats()
     elif (command == "all"):
         print_all_time_stats()
+    elif (command == "my"):
+        print_my_stats(message['sender_id'])
     elif (command == "leaderboard"):
         print_leaderboard()
     else:
