@@ -353,12 +353,9 @@ def update_week_number() -> None:
     conn.commit()
     conn.close()
     msg = "Welcome to Wordle week " + str(cur_week) + "!\n\n"
-    msg = msg + "Last week's stats:"
-    send_message(msg)
     if (stats_available() == True):
-        print_weekly_stats()
         weekly_winners, avg_score = get_weekly_winners()
-        msg = "Last week's winner(s):\n\n"
+        msg = msg + "Last week's winner(s):\n\n"
         msg = msg + weekly_winners + "\nwith an average score of: " + avg_score[:5] + "/6"
         send_message(msg)
     else:
@@ -405,13 +402,10 @@ def update_game_number(game_number: int) -> None:
     conn.commit()
     conn.close()
     msg = "Welcome to Wordle " + str(game_number) + "!\n\n"
-    msg = msg + "Yesterday's scores:"
-    send_message(msg)
     if (stats_available() == True):
-        print_daily_stats()
         daily_winners, score = get_daily_winners()
-        msg = "Yesterday's winner(s):\n\n"
-        msg = msg + daily_winners + "\nwith a score of: " + score
+        msg = msg + "Yesterday's winner(s):\n\n"
+        msg = msg + daily_winners + "\nwith a score of: " + score + "/6"
         send_message(msg)
     else:
         send_message("No stats available yet.")
