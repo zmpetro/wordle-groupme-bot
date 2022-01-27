@@ -553,6 +553,16 @@ def process_score(message: str) -> None:
     # 3. Get the Wordle game # and the score
     game_number, score = get_game_number_and_score(message['text'])
     print("Game number:", game_number, "Score:", score)
+    # If Wordle game number is less than current game number, 
+    # don't process score.
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT GAME FROM GAME_NUMBER;")
+    rows = c.fetchall()
+    conn.close()
+    cur_game = rows[0][0]
+    if (game_number < cur_game):
+        return
     # 4. Update the Wordle game #
     print("Updating the game number to", game_number)
     update_game_number(game_number)
