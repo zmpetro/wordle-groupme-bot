@@ -381,6 +381,17 @@ def get_daily_winners() -> Tuple[str, str]:
             winners = winners + winner_name + "\n"
     return winners, str(highest_score)
 
+def is_old_game(game_number: int) -> bool:
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT GAME FROM GAME_NUMBER;")
+    rows = c.fetchall()
+    conn.close()
+    cur_game = rows[0][0]
+    if (game_number < cur_game):
+        return True
+    return False
+
 def update_game_number(game_number: int) -> None:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
@@ -553,24 +564,17 @@ def process_score(message: str) -> None:
     # 3. Get the Wordle game # and the score
     game_number, score = get_game_number_and_score(message['text'])
     print("Game number:", game_number, "Score:", score)
-    # If Wordle game number is less than current game number, 
-    # don't process score.
-    conn = sqlite3.connect(db_name)
-    c = conn.cursor()
-    c.execute("SELECT GAME FROM GAME_NUMBER;")
-    rows = c.fetchall()
-    conn.close()
-    cur_game = rows[0][0]
-    if (game_number < cur_game):
+    # 4. If Wordle game number is less than current game number, don't process score.
+    if (is_old_game(game_number) == True)):
         return
-    # 4. Update the Wordle game #
+    # 5. Update the Wordle game #
     print("Updating the game number to", game_number)
     update_game_number(game_number)
-    # 5. Check to see if player is new weekly
+    # 6. Check to see if player is new weekly
     if (is_new_player_weekly(message['sender_id']) == True):
         print("New player weekly. Adding player to table.")
         add_new_player_weekly(message['sender_id'])
-    # 6. Update the daily scores table
+    # 7. Update the daily scores table
     print("Updating daily score for player_id:", message['sender_id'], "score:", score)
     if (is_new_player_daily(message['sender_id']) == True):
         update_standings_daily(message['sender_id'], score)
@@ -581,10 +585,10 @@ def process_score(message: str) -> None:
         msg = get_name(message['sender_id'])
         msg = msg + " has already submitted a score for today. Not submitting score."
         send_message(msg)
-    # 7. Update the all time standings
+    # 8. Update the all time standings
     print("Updating all time standings for player_id:", message['sender_id'], "score:", score)
     update_standings_all_time(message['sender_id'], score)
-    # 8. Update the weekly standings
+    # 9. Update the weekly standings
     print("Updating weekly standings for player_id:", message['sender_id'], "score:", score)
     update_standings_weekly(message['sender_id'], score)
 
