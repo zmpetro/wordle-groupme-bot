@@ -389,7 +389,7 @@ def update_game_number(game_number: int) -> None:
     conn.close()
     cur_game = rows[0][0]
 
-    if (cur_game == game_number):
+    if (game_number <= cur_game):
         return
 
     # If it is Monday, update the week number
