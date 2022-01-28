@@ -585,6 +585,7 @@ def process_score(message: str) -> None:
         msg = get_name(message['sender_id'])
         msg = msg + " has already submitted a score for today. Not submitting score."
         send_message(msg)
+        return
     # 8. Update the all time standings
     print("Updating all time standings for player_id:", message['sender_id'], "score:", score)
     update_standings_all_time(message['sender_id'], score)
