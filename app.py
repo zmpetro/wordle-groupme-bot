@@ -565,7 +565,7 @@ def process_score(message: str) -> None:
     game_number, score = get_game_number_and_score(message['text'])
     print("Game number:", game_number, "Score:", score)
     # 4. If Wordle game number is less than current game number, don't process score.
-    if (is_old_game(game_number) == True)):
+    if (is_old_game(game_number) == True):
         return
     # 5. Update the Wordle game #
     print("Updating the game number to", game_number)
