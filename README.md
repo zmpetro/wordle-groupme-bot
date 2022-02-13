@@ -1,7 +1,7 @@
 # wordle-groupme-bot
 _GroupMe bot that tracks Wordle statistics_
 
-wordle-groupme-bot is a GroupMe bot written in Python / Flask / SQLite that tracks Wordle scores over time. Participants in a GroupMe group simply copy and paste their score each day into the group, and the bot will track and display statistics about the players. It also has Microsoft's TrueSkill algorithm built in for the leaderboard function. To use the bot, create a GroupMe bot (https://dev.groupme.com/tutorials/bots) with the server:port you are running the bot on as the callback URL, set the Bot ID (the app looks for BOT_ID as an environment variable), and flask run app.py (systemd service file included). Screenshots:
+wordle-groupme-bot is a GroupMe bot written in Python / Flask / SQLite that tracks Wordle scores over time. Participants in a GroupMe group simply copy and paste their score each day into the group, and the bot will track and display statistics about the players. It also has Microsoft's TrueSkill algorithm built in for the leaderboard function. To use the bot, create a GroupMe bot (https://dev.groupme.com/tutorials/bots) with the server:port you are running the bot on as the callback URL, set the Bot ID (the app looks for BOT_ID as an environment variable), and `flask run` app.py (systemd service file included). Screenshots:
 
 `/wordle`:
 
