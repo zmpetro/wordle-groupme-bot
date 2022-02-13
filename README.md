@@ -19,6 +19,10 @@ wordle-groupme-bot is a GroupMe bot written in Python / Flask / SQLite that trac
 
 <img src="https://raw.githubusercontent.com/zmpetro/wordle-groupme-bot/main/screenshots/weekly.jpg" width="350"/>
 
+`/wordle all`:
+
+<img src="https://raw.githubusercontent.com/zmpetro/wordle-groupme-bot/main/screenshots/all.jpg" width="350"/>
+
 `/wordle my`:
 
 <img src="https://raw.githubusercontent.com/zmpetro/wordle-groupme-bot/main/screenshots/my.jpg" width="350"/>
