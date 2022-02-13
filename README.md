@@ -5,7 +5,7 @@ wordle-groupme-bot is a GroupMe bot written in Python / Flask / SQLite that trac
 
 `/wordle`:
 
-![/wordle](/screenshots/help.jpg)
+<img src="https://raw.githubusercontent.com/zmpetro/wordle-groupme-bot/main/screenshots/help.jpg" alt="/wordle" width="200"/>
 
 `/wordle leaderboard`:
 
