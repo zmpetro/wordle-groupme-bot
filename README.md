@@ -5,26 +5,26 @@ wordle-groupme-bot is a GroupMe bot written in Python / Flask / SQLite that trac
 
 `/wordle`:
 
-<img src="https://raw.githubusercontent.com/zmpetro/wordle-groupme-bot/main/screenshots/help.jpg" alt="/wordle" width="200"/>
+<img src="https://raw.githubusercontent.com/zmpetro/wordle-groupme-bot/main/screenshots/help.jpg" width="350"/>
 
 `/wordle leaderboard`:
 
-![/wordle leaderboard](/screenshots/leaderboard.jpg)
+<img src="https://raw.githubusercontent.com/zmpetro/wordle-groupme-bot/main/screenshots/leaderboard.jpg" width="350"/>
 
 `/wordle daily`:
 
-![/wordle daily](/screenshots/daily.jpg)
+<img src="https://raw.githubusercontent.com/zmpetro/wordle-groupme-bot/main/screenshots/daily.jpg" width="350"/>
 
 `/wordle weekly`:
 
-![/wordle weekly](/screenshots/weekly.jpg)
+<img src="https://raw.githubusercontent.com/zmpetro/wordle-groupme-bot/main/screenshots/weekly.jpg" width="350"/>
 
 `/wordle my`:
 
-![/wordle my](/screenshots/my.jpg)
+<img src="https://raw.githubusercontent.com/zmpetro/wordle-groupme-bot/main/screenshots/my.jpg" width="350"/>
 
 At the start of a new day / Wordle:
 
-![New day / Wordle](/screenshots/yesterday.jpg)
+<img src="https://raw.githubusercontent.com/zmpetro/wordle-groupme-bot/main/screenshots/yesterday.jpg" width="350"/>
 
-Screenshot not shown, but the bot also does the same as directly above for the start of a new week (displays last week's winner).
+Screenshot not shown, but the bot also displays the same as directly above **for the start of a new week** (displays last week's winner).
