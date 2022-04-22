@@ -96,6 +96,7 @@ if not (os.path.exists(db_name)):
     setup_db(db_name)
 
 def send_message(text: str) -> None:
+    text = text[:990]
     msg = {
         "text": text,
         "bot_id": BOT_ID
@@ -174,7 +175,7 @@ def get_name(player_id: str) -> str:
 def stats_available() -> bool:
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
-    c.execute("SELECT * FROM DAILY_STATS")
+    c.execute("SELECT * FROM ALL_TIME_STATS")
     rows = c.fetchall()
     conn.close()
     if (rows):
